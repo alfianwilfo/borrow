@@ -13,6 +13,6 @@ exports.comparePassword = (password, hashed) => {
   return bcrypt.compareSync(password, hashed);
 };
 
-exports.generateToken = () => {
-  return { token: jwt.sign({ foo: "bar" }, "shhhhh, its a secret") };
+exports.generateToken = (id) => {
+  return { token: jwt.sign({ id }, "shhhhh, its a secret") };
 };
