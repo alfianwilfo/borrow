@@ -6,7 +6,7 @@ const connection = mysql
     user: "root",
     password: "root",
     database: "lib",
-    rowsAsArray: true,
+    // rowsAsArray: true,
   })
   .promise();
 

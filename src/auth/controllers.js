@@ -6,7 +6,7 @@ exports.register = async (req, res, next) => {
     id = Helper.getId();
   let { email, password } = req.body;
   let rules = {
-    email: "required|regex:/^[^s@]+@[^s@]+.[^s@]+$/",
+    email: "required|email_available|regex:/^[^s@]+@[^s@]+.[^s@]+$/",
     password: "required|regex:/^(?=.*[A-Z])[A-Za-zd]{8,}$/",
   };
 
@@ -19,7 +19,7 @@ exports.register = async (req, res, next) => {
     async (email, attribute, req, passes) => {
       let sql_count = `SELECT COUNT(*) from user where email = '${email}'`;
       const [rows, fields] = await DB.query(sql_count);
-      if (rows[0] == 0) {
+      if (rows[0]["COUNT(*)"] == 0) {
         passes();
       } else {
         passes(false, "email has already been taken.");
@@ -70,7 +70,7 @@ exports.register = async (req, res, next) => {
 };
 
 exports.login = async (req, res, next) => {
-  let token, sql_find;
+  let token, sql_find, data, check_password;
   let { email, password } = req.body;
   let rules = {
     email: "required",
@@ -100,9 +100,27 @@ exports.login = async (req, res, next) => {
 
   async function passes() {
     try {
-      sql_find = `SELECT * FROM user WHERE email = '${email}'`;
+      sql_find = `SELECT * FROM user WHERE email = '${email}' LIMIT 1`;
       const [rows, fields] = await DB.query(sql_find);
       if (rows.length) {
+        data = rows[0];
+        check_password = await Helper.comparePassword(password, data.password);
+        if (!check_password) {
+          res.json({
+            code: 404,
+            status: "error",
+            message: ["Wrong email or password."],
+            result: [],
+          });
+        } else {
+          token = await Helper.generateToken(data.id);
+          res.json({
+            code: 200,
+            status: "success",
+            message: ["Login success."],
+            result: [token],
+          });
+        }
       } else {
         res.json({
           code: 404,
