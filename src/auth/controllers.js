@@ -142,3 +142,32 @@ exports.login = async (req, res, next) => {
     }
   }
 };
+
+exports.borrow = async (req, res, next) => {
+  let { email, password } = req.body;
+  let rules = {
+    email: "required",
+    password: "required",
+  };
+
+  let error_msg = {
+    in: "invalid :attribute",
+  };
+
+  let validation = new Validator(req.body, rules, error_msg);
+  validation.checkAsync(passes, fails);
+
+  function fails() {
+    let message = [];
+    for (var key in validation.errors.all()) {
+      var value = validation.errors.all()[key];
+      message.push(value[0]);
+    }
+    return res.status(200).json({
+      code: 401,
+      status: "error",
+      message: message,
+      result: [],
+    });
+  }
+};

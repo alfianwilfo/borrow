@@ -12,8 +12,22 @@ async function table_user() {
         UNIQUE (email)
       )`;
 
-  const [rows, fields] = await db.query(sql_user);
-  console.log(rows, "???");
+  await db.query(sql_user);
+}
+
+async function table_book() {
+  const sql_book = `CREATE TABLE IF NOT EXISTS book
+      (
+        id BIGINT NOT NULL AUTO_INCREMENT,
+        name varchar(250),
+        count BIGINT NOT NULL,
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE (name)
+      )`;
+  await db.query(sql_book);
 }
 
 table_user();
+table_book();
