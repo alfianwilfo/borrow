@@ -1,24 +1,30 @@
 const Validator = require("validatorjs");
 const DB = require("../../config/db");
-
+const Helper = require("./helpers");
 exports.list = async (req, res, next) => {
+  let sql_list, sql_count, total;
   let { offset, limit, order, sort } = req.query;
   offset = parseInt(offset) ? parseInt(offset) : 0;
   limit = parseInt(limit) ? parseInt(limit) : 20;
   order = order ? order : "created_at";
   sort = sort ? sort : "desc";
 
-  let { email, password } = req.body;
   let rules = {
-    email: "required",
-    password: "required",
+    offset: "required",
+    limit: "required",
+    order: "required",
+    sort: "required",
   };
 
   let error_msg = {
     in: "invalid :attribute",
   };
 
-  let validation = new Validator(req.body, rules, error_msg);
+  let validation = new Validator(
+    { offset, limit, order, sort },
+    rules,
+    error_msg
+  );
   validation.checkAsync(passes, fails);
 
   function fails() {
@@ -34,9 +40,42 @@ exports.list = async (req, res, next) => {
       result: [],
     });
   }
+
+  async function passes() {
+    try {
+      sql_list = `SELECT * FROM book ORDER BY ${order} ${sort} LIMIT ${limit} OFFSET ${
+        offset * limit
+      }`;
+      sql_count = `SELECT COUNT(*) from book`;
+
+      const [count, field_count] = await DB.query(sql_count);
+      total = count[0]["COUNT(*)"];
+      const [rows, fields] = await DB.query(sql_list);
+      res.json({
+        code: 200,
+        status: "success",
+        message: ["success get list."],
+        total,
+        offset,
+        limit,
+        result: [rows],
+      });
+    } catch (err) {
+      err.message = err.message.includes("SQLState")
+        ? "Query syntax error."
+        : err.message;
+      res.json({
+        code: 400,
+        status: "error",
+        message: [err.message],
+        result: [],
+      });
+    }
+  }
 };
 exports.store = async (req, res, next) => {
-  let sql_insert;
+  let sql_insert,
+    id = Helper.getId();
   let { name, count } = req.body;
   let rules = {
     name: "required|check_book",
@@ -77,7 +116,7 @@ exports.store = async (req, res, next) => {
 
   async function passes() {
     try {
-      sql_insert = `INSERT INTO book (name, count, created_at, updated_at) VALUES ('${name}', '${count}' , CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())`;
+      sql_insert = `INSERT INTO book (id, name, count, created_at, updated_at) VALUES ( '${id}', '${name}', '${count}' , CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())`;
       await DB.query(sql_insert);
       res.json({
         code: 201,
