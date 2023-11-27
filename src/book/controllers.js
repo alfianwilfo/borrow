@@ -240,7 +240,7 @@ exports.borrow = async (req, res, next) => {
 exports.return = async (req, res, next) => {
   let { user_id } = req.session;
   let { book_id } = req.body;
-  let sql_delete;
+  let sql_delete, sql_increment;
   let rules = {
     book_id: "required|numeric|borrow_check",
   };
@@ -280,6 +280,8 @@ exports.return = async (req, res, next) => {
 
   async function passes() {
     try {
+      await DB.query(`START TRANSACTION;`);
+      sql_increment = `UPDATE book SET count = GREATEST(count + 1), updated_at = CURRENT_TIMESTAMP() WHERE id = '${book_id}'`;
       sql_delete = `DELETE FROM borrow WHERE user_id = '${user_id}' AND book_id = '${book_id}'`;
       await DB.query(sql_delete);
       res.json({
